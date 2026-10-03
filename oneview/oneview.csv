@@ -1,22 +1,22 @@
-Name,Status,Sector,Tags,Conviction,Date Created,Next Review,In Portfolio,Notes,Link
-MAHABANK,Research,PSU Bank,"Banking, Value",Medium,07-09-2026,08-10-2026,No,Exit test pending,
-JLHL,Watchlist,Hospitals,"Healthcare, Capex cycle",Medium,30-07-2026,15-10-2026,No,Re-leveraging for bed expansion - track debt,
-ASKAUTOLTD,Research,Auto Components,"Auto, Capex cycle",Medium,30-07-2026,12-10-2026,No,Alloy wheel ramp-up and JV status,
-BORORENEW,Holding,Solar Glass,"Renewables, Anti-dumping",High,30-08-2026,06-10-2026,Yes,Driver status UP,
-POONAWALLA,Watchlist,NBFC,"Lending, Turnaround",Low,14-07-2026,20-10-2026,No,Check EMA stack after drawdown,
-LICHSGFIN,Holding,Housing Finance,"Lending, Value",Medium,14-07-2026,22-10-2026,Yes,Board undecided on higher payout,
-CANTABIL,Pre-Check,Apparel Retail,"Consumer, Governance flag",Low,08-08-2026,09-10-2026,No,Governance caution flags,
-SERVOTECH,Pre-Check,EV & Solar Equipment,"EV, Renewables",Low,24-07-2026,14-10-2026,No,Herd-driver status,
-INDOSTAR,Exited,NBFC,Lending,Low,13-07-2026,,No,,
-IDFCFIRSTB,Holding,Private Bank,Banking,High,14-07-2026,28-10-2026,Yes,,
-SUYOG,Research,Telecom Infra,"Telecom, Capex cycle",Medium,03-07-2026,16-10-2026,No,,
-M&MFIN,Watchlist,NBFC,"Lending, Auto",Medium,11-07-2026,23-10-2026,No,,
-ESAFSFB,Exited,Small Finance Bank,"Banking, Microfinance",Low,30-07-2026,,No,,
-HOMEFIRST,Holding,Housing Finance,"Lending, Affordable housing",High,14-08-2026,30-10-2026,Yes,Shift to 10-40 lakh ticket segment,
-SUDARSCHEM,Pre-Check,Pigments,"Chemicals, Turnaround",Low,14-08-2026,07-10-2026,No,ROCE erratic - DuPont levers weak,
-WINDLAS,Research,Pharma CDMO,Healthcare,Medium,07-09-2026,13-10-2026,No,,
-VIMTALABS,Watchlist,CRO & Testing,Healthcare,Medium,17-08-2026,21-10-2026,No,,
-IGIL,Research,Gem Certification,Consumer,Medium,20-08-2026,10-10-2026,No,,
-INNOVACAP,Pre-Check,Pharma CDMO,Healthcare,Low,18-08-2026,17-10-2026,No,,
-AADHARHFC,Watchlist,Housing Finance,"Lending, Affordable housing",Medium,14-08-2026,27-10-2026,No,,
-AAVAS,Holding,Housing Finance,"Lending, Affordable housing",Medium,07-09-2026,06-11-2026,Yes,,
+Symbol Name,Result Date,Kanban Status,Last updated,Date First Created,Strategy Used
+MAHABANK,14-10-2026,Research,07-09-2026 10:12,07-09-2026,VMG v9.5
+JLHL,05-11-2026,Watchlist,30-07-2026 11:44,30-07-2026,VMG v9.4
+ASKAUTOLTD,29-10-2026,Research,30-07-2026 11:44,30-07-2026,VMG v9.4
+BORORENEW,21-10-2026,Holding,30-08-2026 10:42,30-08-2026,VMG v9.5
+POONAWALLA,23-10-2026,Watchlist,14-07-2026 13:40,14-07-2026,VMG v9.2S
+LICHSGFIN,27-10-2026,Holding,14-07-2026 12:52,14-07-2026,VMG v9.2S
+CANTABIL,06-11-2026,Pre-Check,08-08-2026 12:49,08-08-2026,VMG v9.5
+SERVOTECH,22-10-2026,Pre-Check,24-07-2026 10:09,24-07-2026,VMG v9.4
+INDOSTAR,30-10-2026,Exited,13-07-2026 13:17,13-07-2026,VMG v9.2S
+IDFCFIRSTB,24-10-2026,Holding,14-07-2026 13:00,14-07-2026,VMG v9.2S
+SUYOG,12-11-2026,Research,03-07-2026 10:09,03-07-2026,VMG v9.4
+M&MFIN,26-10-2026,Watchlist,11-07-2026 12:23,11-07-2026,VMG v9.2S
+ESAFSFB,04-11-2026,Exited,30-07-2026 11:14,30-07-2026,VMG v9.2S
+HOMEFIRST,20-10-2026,Holding,14-08-2026 18:07,14-08-2026,VMG v9.4
+SUDARSCHEM,10-11-2026,Pre-Check,14-08-2026 18:07,14-08-2026,VMG v9.5
+WINDLAS,03-11-2026,Research,07-09-2026 10:01,07-09-2026,VMG v9.5
+VIMTALABS,28-10-2026,Watchlist,17-08-2026 12:27,17-08-2026,VMG v9.4
+IGIL,13-11-2026,Research,20-08-2026 12:10,20-08-2026,VMG v9.5
+INNOVACAP,09-11-2026,Pre-Check,18-08-2026 12:26,18-08-2026,VMG v9.5
+AADHARHFC,31-10-2026,Watchlist,14-08-2026 18:07,14-08-2026,VMG v9.4
+AAVAS,22-10-2026,Holding,07-09-2026 10:12,07-09-2026,VMG v9.4

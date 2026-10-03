@@ -7,7 +7,8 @@
 <style>
 :root {
   --bg: #ffffff; --bg-soft: #f7f7f5; --panel: #ffffff; --line: #e9e9e7; --line-strong: #d9d9d6;
-  --text: #37352f; --muted: #787774; --accent: #2383e2; --today: #eb5757; --shadow: 0 1px 2px rgba(15,15,15,.06), 0 0 0 1px rgba(15,15,15,.06);
+  --text: #37352f; --muted: #787774; --accent: #2383e2; --today: #eb5757; --ok: #2b8a57; --danger: #c4372f;
+  --shadow: 0 1px 2px rgba(15,15,15,.06), 0 0 0 1px rgba(15,15,15,.06);
   --gray-bg:#ebeced;   --gray-fg:#4b4a46;
   --brown-bg:#eee0da;  --brown-fg:#6b4a3a;
   --orange-bg:#fbecdd; --orange-fg:#8a4b14;
@@ -17,11 +18,13 @@
   --purple-bg:#efe8f6; --purple-fg:#5b3d84;
   --pink-bg:#f8e6ef;   --pink-fg:#8a2f5c;
   --red-bg:#fbe4e4;    --red-fg:#9b2c2c;
+  color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #191919; --bg-soft: #202020; --panel: #252525; --line: #2f2f2f; --line-strong: #3a3a3a;
-    --text: #e6e6e4; --muted: #9b9b98; --accent: #529cca; --today: #ff7369; --shadow: 0 0 0 1px rgba(255,255,255,.07);
+    --text: #e6e6e4; --muted: #9b9b98; --accent: #529cca; --today: #ff7369; --ok: #6cc08f; --danger: #ff8a80;
+    --shadow: 0 0 0 1px rgba(255,255,255,.07);
     --gray-bg:#373737;   --gray-fg:#d0d0cc;
     --brown-bg:#463a33;  --brown-fg:#e2c4b4;
     --orange-bg:#4d3626; --orange-fg:#f4bf8a;
@@ -31,16 +34,23 @@
     --purple-bg:#3a2f4a; --purple-fg:#cbb3ee;
     --pink-bg:#4a2c3b;   --pink-fg:#f0b0cf;
     --red-bg:#4d2a2a;    --red-fg:#f2a8a8;
+    color-scheme: dark;
   }
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--text); }
 body { font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-button, select, input { font: inherit; color: inherit; }
+button, select, input, textarea { font: inherit; color: inherit; }
 
 .wrap { max-width: 1400px; margin: 0 auto; padding: 28px 24px 48px; }
 h1 { font-size: 28px; line-height: 1.2; margin: 0 0 4px; font-weight: 700; }
-.meta { color: var(--muted); font-size: 13px; margin-bottom: 18px; }
+.meta { color: var(--muted); font-size: 13px; margin-bottom: 18px; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
+.sync { display: inline-flex; align-items: center; gap: 6px; }
+.sync::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+.sync.live::before { background: var(--ok); }
+.sync.busy::before { background: var(--accent); }
+.sync.error::before { background: var(--danger); }
+.sync.error { color: var(--danger); }
 
 .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 16px; }
 .tabs { display: flex; gap: 2px; }
@@ -50,10 +60,17 @@ h1 { font-size: 28px; line-height: 1.2; margin: 0 0 4px; font-weight: 700; }
 .tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-left: auto; }
 .tools label { color: var(--muted); font-size: 13px; display: flex; align-items: center; gap: 6px; }
 .tools select, .tools input { background: var(--panel); border: 1px solid var(--line-strong); border-radius: 6px; padding: 4px 8px; }
-.tools input { width: 200px; }
+.tools input { width: 180px; }
 .tools input:focus, .tools select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.btn { background: var(--panel); border: 1px solid var(--line-strong); border-radius: 6px; padding: 4px 10px; cursor: pointer; white-space: nowrap; }
+.btn:hover { background: var(--bg-soft); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.danger { color: var(--danger); }
+.btn.icon { padding: 2px 7px; }
+.btn:disabled { opacity: .4; cursor: default; }
 
-.pill { display: inline-block; padding: 0 7px; border-radius: 4px; font-size: 12px; line-height: 20px; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+.pill { display: inline-block; padding: 0 7px; border-radius: 4px; font-size: 12px; line-height: 20px; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; border: 0; }
 .pills { display: flex; flex-wrap: wrap; gap: 4px; }
 .c-gray{background:var(--gray-bg);color:var(--gray-fg)} .c-brown{background:var(--brown-bg);color:var(--brown-fg)}
 .c-orange{background:var(--orange-bg);color:var(--orange-fg)} .c-yellow{background:var(--yellow-bg);color:var(--yellow-fg)}
@@ -66,50 +83,57 @@ h1 { font-size: 28px; line-height: 1.2; margin: 0 0 4px; font-weight: 700; }
 .check.on::after { content: ""; position: absolute; left: 3.5px; top: 0.5px; width: 4px; height: 8px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
 a { color: var(--accent); }
 .empty-note { color: var(--muted); padding: 24px 0; }
+.muted { color: var(--muted); }
 
 /* Board */
 .board { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 12px; align-items: flex-start; }
-.col { flex: 0 0 272px; background: var(--bg-soft); border-radius: 8px; padding: 8px; }
+.col { flex: 0 0 272px; background: var(--bg-soft); border-radius: 8px; padding: 8px; outline: 2px solid transparent; transition: outline-color .1s; }
+.col.over { outline-color: var(--accent); }
 .col-head { display: flex; align-items: center; gap: 8px; padding: 2px 4px 8px; }
 .col-head .count { color: var(--muted); font-size: 13px; }
-.cards { display: flex; flex-direction: column; gap: 8px; }
-.card { background: var(--panel); border-radius: 6px; box-shadow: var(--shadow); padding: 10px 12px; cursor: pointer; text-align: left; border: 0; width: 100%; display: block; }
+.cards { display: flex; flex-direction: column; gap: 8px; min-height: 8px; }
+.card { background: var(--panel); border-radius: 6px; box-shadow: var(--shadow); padding: 10px 12px; cursor: pointer; }
 .card:hover { background: color-mix(in srgb, var(--panel) 92%, var(--text)); }
-.card:focus-visible { outline: 2px solid var(--accent); }
+.card:focus-visible, .ev:focus-visible { outline: 2px solid var(--accent); }
+.card.dragging, .ev.dragging { opacity: .4; }
 .card-title { font-weight: 600; margin-bottom: 6px; overflow-wrap: anywhere; }
 .card-prop { font-size: 12px; margin-top: 4px; display: flex; gap: 6px; align-items: baseline; min-width: 0; }
 .card-prop .k { color: var(--muted); flex: 0 0 auto; }
 .card-prop .v { min-width: 0; overflow-wrap: anywhere; }
+.add-card { margin-top: 8px; width: 100%; text-align: left; background: none; border: 0; color: var(--muted); padding: 6px 8px; border-radius: 6px; cursor: pointer; }
+.add-card:hover { background: color-mix(in srgb, var(--bg-soft) 80%, var(--text)); color: var(--text); }
 
 /* Table */
 .table-wrap { overflow-x: auto; border-top: 1px solid var(--line); }
 table { border-collapse: collapse; width: 100%; min-width: 720px; }
 th, td { border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
 th:last-child, td:last-child { border-right: 0; }
-th { font-weight: 500; color: var(--muted); font-size: 13px; white-space: nowrap; cursor: pointer; user-select: none; background: var(--bg); position: sticky; top: 0; }
+th { font-weight: 500; color: var(--muted); font-size: 13px; white-space: nowrap; cursor: pointer; user-select: none; background: var(--bg); }
 th:hover { background: var(--bg-soft); }
 th .arrow { font-size: 10px; margin-left: 4px; }
 td.num { text-align: right; font-variant-numeric: tabular-nums; }
-td.title { font-weight: 600; position: sticky; left: 0; background: var(--bg); cursor: pointer; white-space: nowrap; }
+td.title { font-weight: 600; position: sticky; left: 0; background: var(--bg); white-space: nowrap; }
 th.title { position: sticky; left: 0; z-index: 1; }
+tbody tr { cursor: pointer; }
 tbody tr:hover td { background: var(--bg-soft); }
 td.wrap-text { min-width: 220px; max-width: 420px; }
 
 /* Calendar */
 .cal-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
 .cal-head h2 { font-size: 18px; margin: 0 8px 0 0; font-weight: 600; min-width: 150px; }
-.btn { background: var(--panel); border: 1px solid var(--line-strong); border-radius: 6px; padding: 3px 10px; cursor: pointer; }
-.btn:hover { background: var(--bg-soft); }
 .cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
 .cal .dow { font-size: 12px; color: var(--muted); padding: 4px 8px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .day { min-height: 116px; max-height: 180px; overflow-y: auto; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 4px; display: flex; flex-direction: column; gap: 3px; }
 .day.out { background: var(--bg-soft); }
-.day.out .num { color: var(--muted); opacity: .6; }
-.day .num { font-size: 12px; text-align: right; padding: 2px 4px; }
+.day.over { background: color-mix(in srgb, var(--accent) 12%, var(--bg)); }
+.day.out .num span { color: var(--muted); opacity: .7; }
+.day .num { font-size: 12px; display: flex; justify-content: flex-end; align-items: center; gap: 4px; padding: 2px 4px; }
 .day.today .num span { background: var(--today); color: #fff; border-radius: 10px; padding: 1px 6px; }
-.ev { border: 0; cursor: pointer; text-align: left; font-size: 12px; padding: 2px 6px; border-radius: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; box-shadow: var(--shadow); }
+.day-add { margin-right: auto; border: 0; background: none; color: var(--muted); cursor: pointer; border-radius: 4px; padding: 0 5px; line-height: 18px; opacity: 0; }
+.day:hover .day-add, .day-add:focus-visible { opacity: 1; }
+.day-add:hover { background: var(--bg-soft); color: var(--text); }
+.ev { cursor: pointer; font-size: 12px; padding: 2px 6px; border-radius: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: var(--shadow); }
 .ev:not([class*="c-"]) { background: var(--panel); }
-.ev:focus-visible { outline: 2px solid var(--accent); }
 .agenda { display: none; }
 .agenda-day { border-bottom: 1px solid var(--line); padding: 8px 0; display: flex; gap: 12px; }
 .agenda-day .d { flex: 0 0 56px; color: var(--muted); font-size: 13px; }
@@ -120,31 +144,70 @@ td.wrap-text { min-width: 220px; max-width: 420px; }
 
 /* Drawer */
 .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.25); opacity: 0; pointer-events: none; transition: opacity .15s; }
-.drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(420px, 100%); background: var(--panel); transform: translateX(100%); transition: transform .18s ease, visibility .18s; visibility: hidden; overflow-y: auto; padding: 20px 24px; border-left: 1px solid var(--line); }
+.drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(460px, 100%); background: var(--panel); transform: translateX(100%); transition: transform .18s ease, visibility .18s; visibility: hidden; overflow-y: auto; padding: 16px 24px 32px; border-left: 1px solid var(--line); }
 .open .scrim { opacity: 1; pointer-events: auto; }
 .open .drawer { transform: none; visibility: visible; box-shadow: -8px 0 24px rgba(0,0,0,.12); }
+.d-top { display: flex; justify-content: flex-end; margin-bottom: 4px; }
 .drawer h2 { font-size: 22px; margin: 4px 0 16px; overflow-wrap: anywhere; }
-.drawer .close { float: right; }
-.props { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 10px 12px; }
-.props .k { color: var(--muted); font-size: 13px; }
-.props .v { overflow-wrap: anywhere; white-space: pre-wrap; }
-.props .v .pills { white-space: normal; }
+.d-title { font-size: 22px; font-weight: 700; width: 100%; border: 0; background: none; padding: 4px 6px; margin: 0 0 14px -6px; border-radius: 6px; }
+.props { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 6px 12px; align-items: start; }
+.props .k { color: var(--muted); font-size: 13px; padding-top: 6px; overflow-wrap: anywhere; }
+.props .v { overflow-wrap: anywhere; min-height: 30px; padding-top: 4px; }
+.props .v.ro { padding-top: 6px; }
+.in { width: 100%; border: 1px solid transparent; background: none; border-radius: 6px; padding: 3px 6px; margin-left: -6px; resize: vertical; }
+textarea.in { field-sizing: content; min-height: 30px; }
+.in:hover, .d-title:hover { background: var(--bg-soft); }
+.in:focus, .d-title:focus { outline: none; border-color: var(--accent); background: var(--panel); }
+.in::placeholder, .d-title::placeholder { color: var(--muted); opacity: .7; }
+input.in[type=date] { width: auto; }
+.cb { width: 16px; height: 16px; margin: 6px 0 0; accent-color: var(--accent); }
+.ms { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; padding-top: 2px; }
+.ms .pill { cursor: pointer; opacity: .45; }
+.ms .pill.on { opacity: 1; }
+.ms .pill:focus-visible { outline: 2px solid var(--accent); }
+.ms .in { width: 90px; margin-left: 0; }
+.auto-v { color: var(--muted); font-size: 13px; }
+.d-foot { display: flex; align-items: center; gap: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--line); flex-wrap: wrap; }
+.hint { color: var(--muted); font-size: 12px; }
+
+/* Columns panel */
+.colrow { border: 1px solid var(--line); border-radius: 8px; padding: 10px; margin-bottom: 8px; }
+.colrow-top { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.colrow-top .in { flex: 1 1 140px; margin-left: 0; border-color: var(--line-strong); }
+.colrow select, .addcol select, .field select { background: var(--panel); border: 1px solid var(--line-strong); border-radius: 6px; padding: 3px 6px; }
+.colrow-opts { display: flex; gap: 14px; margin-top: 8px; font-size: 13px; color: var(--muted); flex-wrap: wrap; align-items: center; }
+.colrow-opts label { display: inline-flex; gap: 5px; align-items: center; }
+.optlist { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
+.optrow { display: flex; align-items: center; gap: 6px; }
+.optrow .pill { flex: 1; min-width: 0; text-align: left; }
+.optrow select { font-size: 12px; padding: 1px 4px; }
+.addcol { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+.addcol .in { flex: 1 1 160px; margin-left: 0; border-color: var(--line-strong); }
+.field { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; font-size: 13px; color: var(--muted); }
+.drawer h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 20px 0 8px; font-weight: 600; }
+
+.toast { position: fixed; left: 50%; bottom: 20px; transform: translate(-50%, 20px); background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 8px; font-size: 13px; max-width: calc(100% - 32px); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 10; }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.toast.bad { background: var(--danger); color: #fff; }
 
 @media (max-width: 640px) {
   .wrap { padding: 20px 16px 40px; }
   h1 { font-size: 24px; }
   .tools { margin-left: 0; width: 100%; }
-  .tools input { width: 100%; flex: 1 1 100%; }
+  .tools input { width: 100%; flex: 1 1 100%; order: 9; }
   .col { flex-basis: 85%; }
   .cal { display: none; }
   .agenda { display: block; }
+  .drawer { padding: 12px 16px 32px; }
+  .props { grid-template-columns: 1fr; gap: 0 0; }
+  .props .k { padding-top: 10px; }
 }
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1 id="title"></h1>
-  <div class="meta" id="meta"></div>
+  <div class="meta"><span id="count"></span><span id="sync" class="sync"></span></div>
 
   <div class="bar">
     <div class="tabs" role="tablist">
@@ -156,41 +219,50 @@ td.wrap-text { min-width: 220px; max-width: 420px; }
       <label id="groupWrap">Group by <select id="groupBy"></select></label>
       <label id="dateWrap">Date <select id="dateProp"></select></label>
       <input id="search" type="search" placeholder="Search…" aria-label="Search">
+      <button class="btn" id="columnsBtn">Columns</button>
+      <button class="btn primary" id="newBtn">+ New</button>
     </div>
   </div>
 
-  <main id="view"></main>
+  <main id="view"><p class="empty-note">Loading…</p></main>
 </div>
 
 <div id="detail">
   <div class="scrim" data-close></div>
-  <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="dTitle">
-    <button class="btn close" data-close aria-label="Close">Close</button>
-    <h2 id="dTitle"></h2>
-    <div class="props" id="dProps"></div>
+  <aside class="drawer" role="dialog" aria-modal="true" aria-label="Details">
+    <div class="d-top"><button class="btn" data-close>Close</button></div>
+    <div id="dBody"></div>
   </aside>
 </div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script type="application/json" id="data">__DATA__</script>
+<script type="application/json" id="data" data-token="__TOKEN__">__DATA__</script>
 <script>
 (function () {
   'use strict';
-  const D = JSON.parse(document.getElementById('data').textContent);
-  const PROPS = D.properties;
-  const BY_NAME = Object.fromEntries(PROPS.map(p => [p.name, p]));
-  const TITLE = D.titleProperty;
+  const dataEl = document.getElementById('data');
+  const EMBEDDED = JSON.parse(dataEl.textContent);
+  const TOKEN = dataEl.dataset.token;
+  const LIVE = EMBEDDED === null;          // served by oneview.py (editable) vs an exported snapshot
+  const POLL_MS = 2000;
   const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const COLOURS = ['gray','brown','orange','yellow','green','blue','purple','pink','red'];
+  const TYPE_LABELS = { title: 'Title', text: 'Text', select: 'Select', status: 'Status', multi_select: 'Multi-select',
+    date: 'Date', created_time: 'Created time', last_edited_time: 'Last edited time', number: 'Number', checkbox: 'Checkbox', url: 'URL' };
 
-  // ---------- small helpers
+  // ---------- helpers
+  const $ = id => document.getElementById(id);
   const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const cssq = s => (window.CSS && CSS.escape) ? CSS.escape(s) : String(s).replace(/["\\]/g, '\\$&');
   const store = {
-    get(k, d) { try { const v = localStorage.getItem('oneview:' + D.title + ':' + k); return v == null ? d : v; } catch (e) { return d; } },
-    set(k, v) { try { localStorage.setItem('oneview:' + D.title + ':' + k, v); } catch (e) {} }
+    get(k, d) { try { const v = localStorage.getItem('oneview:' + k); return v == null ? d : v; } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem('oneview:' + k, v); } catch (e) {} }
   };
   const pad = n => String(n).padStart(2, '0');
   const ymd = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
-  const isDateType = t => t === 'date' || t === 'created_time';
+  const isDateType = t => t === 'date' || t === 'created_time' || t === 'last_edited_time';
+  const isStampType = t => t === 'created_time' || t === 'last_edited_time';
   const isSelectType = t => t === 'select' || t === 'status';
 
   function parseIso(iso) {
@@ -219,19 +291,18 @@ td.wrap-text { min-width: 220px; max-width: 420px; }
     if (prop.type === 'checkbox') return v === false;
     return false;
   }
-
   function valueHtml(prop, v) {
     switch (prop.type) {
       case 'select': case 'status': return v ? pill(prop, v) : '';
       case 'multi_select': return (v && v.length) ? '<span class="pills">' + v.map(x => pill(prop, x)).join('') + '</span>' : '';
-      case 'date': case 'created_time': return esc(fmtDate(v));
+      case 'date': case 'created_time': case 'last_edited_time': return esc(fmtDate(v));
       case 'number': return v == null ? '' : esc(v.toLocaleString('en-IN', { maximumFractionDigits: 2 }));
       case 'checkbox': return '<span class="check' + (v ? ' on' : '') + '" role="img" aria-label="' + (v ? 'Yes' : 'No') + '"></span>';
       case 'url':
         if (!v) return '';
         if (/^https?:\/\//i.test(v)) {
           let label = v; try { label = new URL(v).hostname.replace(/^www\./, ''); } catch (e) {}
-          return '<a href="' + esc(v) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">' + esc(label) + '</a>';
+          return '<a href="' + esc(v) + '" target="_blank" rel="noopener" data-link>' + esc(label) + '</a>';
         }
         return esc(v);
       default: return esc(v == null ? '' : v);
@@ -244,65 +315,153 @@ td.wrap-text { min-width: 220px; max-width: 420px; }
     if (prop.type === 'checkbox') return v ? prop.name : '';
     return String(v);
   }
-  const SEARCH_TEXT = D.rows.map(r => PROPS.map(p => valueText(p, r[p.name])).join(' \u0001 ').toLowerCase());
 
-  // ---------- state
-  const groupProps = PROPS.filter(p => isSelectType(p.type));
-  const dateProps = PROPS.filter(p => isDateType(p.type));
+  // ---------- data + state
+  let D, PROPS, BY_NAME, TITLE, ROW_BY_ID, SEARCH_TEXT;
   const today = new Date();
   const state = {
     view: store.get('view', 'board'),
-    groupBy: store.get('groupBy', D.board.group_by),
-    dateProp: store.get('dateProp', D.calendar.date_property),
+    groupBy: store.get('groupBy', null),
+    dateProp: store.get('dateProp', null),
     query: '',
-    sortKey: store.get('sortKey', TITLE),
-    sortDir: +store.get('sortDir', 1),
+    sortKey: store.get('sortKey', null),
+    sortDir: +store.get('sortDir', 1) || 1,
     month: new Date(today.getFullYear(), today.getMonth(), 1)
   };
   if (!['board', 'table', 'calendar'].includes(state.view)) state.view = 'board';
-  if (!BY_NAME[state.groupBy] || !isSelectType(BY_NAME[state.groupBy].type)) state.groupBy = D.board.group_by;
-  if (!BY_NAME[state.dateProp] || !isDateType(BY_NAME[state.dateProp].type)) state.dateProp = D.calendar.date_property;
-  if (!BY_NAME[state.sortKey]) state.sortKey = TITLE;
 
+  function setData(d) {
+    D = d;
+    PROPS = d.properties;
+    BY_NAME = Object.fromEntries(PROPS.map(p => [p.name, p]));
+    TITLE = d.titleProperty;
+    ROW_BY_ID = new Map(d.rows.map(r => [r.id, r]));
+    SEARCH_TEXT = new Map(d.rows.map(r => [r.id, PROPS.map(p => valueText(p, r.v[p.name])).join(' \u0001 ').toLowerCase()]));
+    if (!BY_NAME[state.groupBy] || !isSelectType(BY_NAME[state.groupBy].type)) state.groupBy = d.board.group_by;
+    if (!BY_NAME[state.dateProp] || !isDateType(BY_NAME[state.dateProp].type)) state.dateProp = d.calendar.date_property;
+    if (!BY_NAME[state.sortKey]) state.sortKey = TITLE;
+    const groups = PROPS.filter(p => isSelectType(p.type)), dates = PROPS.filter(p => isDateType(p.type));
+    $('groupBy').innerHTML = groups.map(p => '<option>' + esc(p.name) + '</option>').join('');
+    $('dateProp').innerHTML = dates.map(p => '<option>' + esc(p.name) + '</option>').join('');
+    if (state.groupBy) $('groupBy').value = state.groupBy;
+    if (state.dateProp) $('dateProp').value = state.dateProp;
+    document.title = d.title;
+    $('title').textContent = d.title;
+    $('count').textContent = d.rows.length + ' cards · ' + PROPS.length + ' columns · ' + d.source;
+    if (d.warnings && d.warnings.length) console.warn('OneView:\n' + d.warnings.join('\n'));
+  }
   const visibleRows = () => {
     const q = state.query.trim().toLowerCase();
-    const idx = [];
-    D.rows.forEach((_, i) => { if (!q || SEARCH_TEXT[i].includes(q)) idx.push(i); });
-    return idx;
+    return q ? D.rows.filter(r => SEARCH_TEXT.get(r.id).includes(q)) : D.rows.slice();
   };
+  const titleOf = r => (TITLE && r.v[TITLE]) || 'Untitled';
+
+  // ---------- sync status + toast
+  function setSync(kind, text) {
+    const el = $('sync');
+    el.className = 'sync ' + kind;
+    el.textContent = text;
+  }
+  const syncIdle = () => LIVE ? setSync('live', 'Live · synced with ' + D.source) : setSync('', 'Read-only snapshot · ' + D.generated);
+  let toastTimer;
+  function toast(msg, bad) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (bad ? ' bad' : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.className = 'toast' + (bad ? ' bad' : ''); }, bad ? 6000 : 3000);
+  }
+
+  // ---------- server calls (queued so each one sees the version the previous one produced)
+  let queue = Promise.resolve(), pending = 0;
+  function send(op) {
+    pending++;
+    setSync('busy', 'Saving…');
+    const run = async () => {
+      try {
+        const res = await fetch('/api/op', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-OneView-Token': TOKEN },
+          body: JSON.stringify(Object.assign({}, op, { version: D.version }))
+        });
+        const body = await res.json();
+        if (res.ok) { applyData(body); return body; }
+        if (res.status === 409 && body.data) { applyData(body.data); toast(body.error, true); return null; }
+        toast(body.error || 'Could not save.', true);
+        await reload();          // undo anything shown before the save was confirmed
+        return null;
+      } catch (e) {
+        toast('Can’t reach OneView. Is "python oneview.py" still running?', true);
+        return null;
+      } finally {
+        pending--;
+        if (!pending) syncIdle();
+      }
+    };
+    queue = queue.then(run);
+    return queue;
+  }
+
+  async function reload() {
+    try {
+      const d = await (await fetch('/api/data', { cache: 'no-store' })).json();
+      if (!d.error) applyData(d);
+    } catch (e) {}
+  }
+
+  async function poll() {
+    if (!LIVE || document.hidden || pending) return;
+    try {
+      const v = await (await fetch('/api/version', { cache: 'no-store' })).json();
+      if (v.error) { setSync('error', v.error); return; }
+      if (v.version !== D.version && !pending) {
+        const d = await (await fetch('/api/data', { cache: 'no-store' })).json();
+        if (d.error) { setSync('error', d.error); return; }
+        if (!pending) { applyData(d); toast('Updated from ' + d.source); }
+      }
+      if (!pending) syncIdle();
+    } catch (e) {
+      setSync('error', 'Offline – start "python oneview.py" again');
+    }
+  }
+
+  function applyData(d) {
+    setData(d);
+    render();
+    refreshDrawer();
+  }
 
   // ---------- board
-  function cardHtml(i) {
-    const r = D.rows[i];
-    let h = '<button class="card" data-row="' + i + '"><div class="card-title">' + esc(r[TITLE] || 'Untitled') + '</div>';
+  function cardHtml(r) {
+    let h = '<div class="card" role="button" tabindex="0" data-row="' + r.id + '"' + (LIVE ? ' draggable="true"' : '') + '>' +
+            '<div class="card-title">' + esc(titleOf(r)) + '</div>';
     PROPS.forEach(p => {
-      if (!p.onCard || p.type === 'title' || p.name === state.groupBy || isEmpty(p, r[p.name])) return;
+      if (!p.onCard || p.type === 'title' || p.name === state.groupBy || isEmpty(p, r.v[p.name])) return;
       const showKey = !(isSelectType(p.type) || p.type === 'multi_select');
       h += '<div class="card-prop">' + (showKey ? '<span class="k">' + esc(p.name) + '</span>' : '') +
-           '<span class="v">' + valueHtml(p, r[p.name]) + '</span></div>';
+           '<span class="v">' + valueHtml(p, r.v[p.name]) + '</span></div>';
     });
-    return h + '</button>';
+    return h + '</div>';
   }
   function renderBoard(rows) {
     const gp = BY_NAME[state.groupBy];
-    if (!gp) return '<p class="empty-note">Add a <b>select</b> property in config.json to group the board.</p>';
-    const order = Object.keys(gp.options || {});
-    const groups = new Map(order.map(k => [k, []]));
+    if (!gp) return '<p class="empty-note">No select column to group by. Open <b>Columns</b> and set a column’s type to <b>Select</b>.</p>';
+    const groups = new Map(Object.keys(gp.options || {}).map(k => [k, []]));
     const none = [];
-    rows.forEach(i => {
-      const v = D.rows[i][gp.name];
-      if (!v) none.push(i);
-      else { if (!groups.has(v)) groups.set(v, []); groups.get(v).push(i); }
+    rows.forEach(r => {
+      const v = r.v[gp.name];
+      if (!v) none.push(r);
+      else { if (!groups.has(v)) groups.set(v, []); groups.get(v).push(r); }
     });
-    const cols = [...groups.entries()];
-    cols.push(['', none]);
+    const cols = [...groups.entries(), ['', none]];
     let h = '<div class="board">';
     cols.forEach(([name, items]) => {
       if (!items.length && (name === '' || D.board.hide_empty_columns)) return;
       const label = name ? '<span class="pill c-' + esc(colourOf(gp, name)) + '"><span class="dot"></span>' + esc(name) + '</span>'
                          : '<span class="pill c-gray">No ' + esc(gp.name) + '</span>';
-      h += '<section class="col" aria-label="' + esc(name || 'No ' + gp.name) + '"><div class="col-head">' + label +
-           '<span class="count">' + items.length + '</span></div><div class="cards">' + items.map(cardHtml).join('') + '</div></section>';
+      h += '<section class="col" data-group="' + esc(name) + '" aria-label="' + esc(name || 'No ' + gp.name) + '"><div class="col-head">' + label +
+           '<span class="count">' + items.length + '</span></div><div class="cards">' + items.map(cardHtml).join('') + '</div>' +
+           (LIVE ? '<button class="add-card" data-new-group="' + esc(name) + '">+ New</button>' : '') + '</section>';
     });
     return h + '</div>';
   }
@@ -313,16 +472,16 @@ td.wrap-text { min-width: 220px; max-width: 420px; }
     if (p.type === 'number') return v;
     if (p.type === 'checkbox') return v ? 1 : 0;
     if (p.type === 'multi_select') return v.join(', ').toLowerCase();
-    if (isSelectType(p.type)) { const k = Object.keys(p.options || {}); const at = k.indexOf(v); return at < 0 ? 1e6 : at; }
+    if (isSelectType(p.type)) { const at = Object.keys(p.options || {}).indexOf(v); return at < 0 ? 1e6 : at; }
     return String(v).toLowerCase();
   }
   function renderTable(rows) {
     const cols = PROPS.filter(p => p.inTable || p.type === 'title');
     cols.sort((a, b) => (b.type === 'title') - (a.type === 'title'));
     const sp = BY_NAME[state.sortKey];
-    const sorted = rows.slice().sort((a, b) => {
-      const x = sortValue(sp, D.rows[a][sp.name]), y = sortValue(sp, D.rows[b][sp.name]);
-      if (x === y) return a - b;
+    if (sp) rows.sort((a, b) => {
+      const x = sortValue(sp, a.v[sp.name]), y = sortValue(sp, b.v[sp.name]);
+      if (x === y) return a.id - b.id;
       if (x === null) return 1;
       if (y === null) return -1;
       const c = (typeof x === 'number' && typeof y === 'number') ? x - y : String(x).localeCompare(String(y), undefined, { numeric: true });
@@ -336,43 +495,41 @@ td.wrap-text { min-width: 220px; max-width: 420px; }
            (on ? '<span class="arrow">' + (state.sortDir > 0 ? '▲' : '▼') + '</span>' : '') + '</th>';
     });
     h += '</tr></thead><tbody>';
-    sorted.forEach(i => {
-      const r = D.rows[i];
-      h += '<tr data-row="' + i + '">';
+    rows.forEach(r => {
+      h += '<tr data-row="' + r.id + '">';
       cols.forEach(p => {
         const cls = p.type === 'title' ? 'title' : p.type === 'number' ? 'num' : p.type === 'text' ? 'wrap-text' : '';
-        h += '<td class="' + cls + '">' + (p.type === 'title' ? esc(r[p.name] || 'Untitled') : valueHtml(p, r[p.name])) + '</td>';
+        h += '<td class="' + cls + '">' + (p.type === 'title' ? esc(titleOf(r)) : valueHtml(p, r.v[p.name])) + '</td>';
       });
       h += '</tr>';
     });
-    return h + '</tbody></table></div>' + (sorted.length ? '' : '<p class="empty-note">No cards match.</p>');
+    return h + '</tbody></table></div>' + (rows.length ? '' : '<p class="empty-note">No cards match.</p>');
   }
 
   // ---------- calendar
-  function eventHtml(i) {
-    const r = D.rows[i];
+  function eventHtml(r) {
     const gp = BY_NAME[state.groupBy];
-    const g = gp && r[gp.name];
-    const cls = g ? 'c-' + colourOf(gp, g) : '';
-    return '<button class="ev ' + esc(cls) + '" data-row="' + i + '" title="' + esc(r[TITLE] || 'Untitled') + (g ? ' · ' + esc(g) : '') + '">' +
-           esc(r[TITLE] || 'Untitled') + '</button>';
+    const g = gp && r.v[gp.name];
+    return '<div class="ev' + (g ? ' c-' + esc(colourOf(gp, g)) : '') + '" role="button" tabindex="0" data-row="' + r.id + '"' +
+           (LIVE && !isStampType(BY_NAME[state.dateProp].type) ? ' draggable="true"' : '') +
+           ' title="' + esc(titleOf(r)) + (g ? ' · ' + esc(g) : '') + '">' + esc(titleOf(r)) + '</div>';
   }
   function renderCalendar(rows) {
     const dp = BY_NAME[state.dateProp];
-    if (!dp) return '<p class="empty-note">Add a <b>date</b> property in config.json to use the calendar.</p>';
+    if (!dp) return '<p class="empty-note">No date column. Open <b>Columns</b> and set a column’s type to <b>Date</b>.</p>';
+    const canAdd = LIVE && !isStampType(dp.type);
     const byDay = new Map();
     let undated = 0;
-    rows.forEach(i => {
-      const v = D.rows[i][dp.name];
+    rows.forEach(r => {
+      const v = r.v[dp.name];
       if (!v) { undated++; return; }
       const k = v.slice(0, 10);
       if (!byDay.has(k)) byDay.set(k, []);
-      byDay.get(k).push(i);
+      byDay.get(k).push(r);
     });
     const y = state.month.getFullYear(), m = state.month.getMonth();
     const monStart = D.calendar.week_starts_monday !== false;
-    const first = new Date(y, m, 1);
-    const offset = monStart ? (first.getDay() + 6) % 7 : first.getDay();
+    const offset = monStart ? (new Date(y, m, 1).getDay() + 6) % 7 : new Date(y, m, 1).getDay();
     const daysIn = new Date(y, m + 1, 0).getDate();
     const weeks = Math.ceil((offset + daysIn) / 7);
     const todayKey = ymd(today);
@@ -382,19 +539,15 @@ td.wrap-text { min-width: 220px; max-width: 420px; }
             '<button class="btn" data-nav="-1" aria-label="Previous month">‹</button>' +
             '<button class="btn" data-nav="0">Today</button>' +
             '<button class="btn" data-nav="1" aria-label="Next month">›</button></div>';
-
     h += '<div class="cal">' + dows.map(d => '<div class="dow">' + d + '</div>').join('');
     for (let c = 0; c < weeks * 7; c++) {
-      const d = new Date(y, m, 1 - offset + c);
-      const k = ymd(d);
-      const items = byDay.get(k) || [];
-      h += '<div class="day' + (d.getMonth() !== m ? ' out' : '') + (k === todayKey ? ' today' : '') + '">' +
-           '<div class="num"><span>' + (d.getDate() === 1 ? MONTHS[d.getMonth()].slice(0, 3) + ' ' : '') + d.getDate() + '</span></div>' +
-           items.map(eventHtml).join('') + '</div>';
+      const d = new Date(y, m, 1 - offset + c), k = ymd(d);
+      h += '<div class="day' + (d.getMonth() !== m ? ' out' : '') + (k === todayKey ? ' today' : '') + '" data-date="' + k + '">' +
+           '<div class="num">' + (canAdd ? '<button class="day-add" data-new-date="' + k + '" aria-label="New card on ' + esc(fmtDate(k)) + '">+</button>' : '') +
+           '<span>' + (d.getDate() === 1 ? MONTHS[d.getMonth()].slice(0, 3) + ' ' : '') + d.getDate() + '</span></div>' +
+           (byDay.get(k) || []).map(eventHtml).join('') + '</div>';
     }
     h += '</div>';
-
-    // Phone layout: a list of the month's dated cards instead of the grid.
     let a = '';
     for (let day = 1; day <= daysIn; day++) {
       const d = new Date(y, m, day), k = ymd(d), items = byDay.get(k);
@@ -407,51 +560,267 @@ td.wrap-text { min-width: 220px; max-width: 420px; }
     return h;
   }
 
-  // ---------- detail drawer
-  const detail = document.getElementById('detail');
-  let lastFocus = null;
-  function openDetail(i) {
-    const r = D.rows[i];
-    lastFocus = document.activeElement;
-    document.getElementById('dTitle').textContent = r[TITLE] || 'Untitled';
-    document.getElementById('dProps').innerHTML = PROPS.filter(p => p.type !== 'title').map(p =>
-      '<div class="k">' + esc(p.name) + '</div><div class="v">' + (valueHtml(p, r[p.name]) || '<span style="color:var(--muted)">Empty</span>') + '</div>'
-    ).join('');
-    detail.classList.add('open');
-    detail.querySelector('.close').focus();
-  }
-  function closeDetail() {
-    detail.classList.remove('open');
-    if (lastFocus) lastFocus.focus();
-  }
-  detail.addEventListener('click', e => { if (e.target.closest('[data-close]')) closeDetail(); });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && detail.classList.contains('open')) closeDetail(); });
-
-  // ---------- wiring
-  const view = document.getElementById('view');
-  const groupSel = document.getElementById('groupBy');
-  const dateSel = document.getElementById('dateProp');
-  groupSel.innerHTML = groupProps.map(p => '<option>' + esc(p.name) + '</option>').join('');
-  dateSel.innerHTML = dateProps.map(p => '<option>' + esc(p.name) + '</option>').join('');
-  if (state.groupBy) groupSel.value = state.groupBy;
-  if (state.dateProp) dateSel.value = state.dateProp;
-
+  // ---------- main render
+  const view = $('view');
   function render() {
     document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', t.dataset.view === state.view));
-    document.getElementById('groupWrap').style.display = (state.view !== 'table' && groupProps.length) ? '' : 'none';
-    document.getElementById('dateWrap').style.display = (state.view === 'calendar' && dateProps.length) ? '' : 'none';
+    $('groupWrap').style.display = (state.view !== 'table' && $('groupBy').options.length) ? '' : 'none';
+    $('dateWrap').style.display = (state.view === 'calendar' && $('dateProp').options.length) ? '' : 'none';
+    $('newBtn').style.display = $('columnsBtn').style.display = LIVE ? '' : 'none';
+    const keep = [...view.querySelectorAll('.board, .table-wrap')].map(el => el.scrollLeft);
     const rows = visibleRows();
     view.innerHTML = state.view === 'board' ? renderBoard(rows) : state.view === 'table' ? renderTable(rows) : renderCalendar(rows);
+    view.querySelectorAll('.board, .table-wrap').forEach((el, i) => { el.scrollLeft = keep[i] || 0; });
   }
 
+  // ---------- drawer: card editor and columns panel
+  const detail = $('detail'), dBody = $('dBody');
+  const drawer = { mode: null, id: null, stale: false, lastFocus: null };
+
+  function editorHtml(p, v, i) {
+    const a = 'data-col="' + esc(p.name) + '" aria-label="' + esc(p.name) + '"';
+    switch (p.type) {
+      case 'select': case 'status':
+        return '<input class="in" ' + a + ' list="dl' + i + '" value="' + esc(v || '') + '" placeholder="Empty" autocomplete="off">' +
+               '<datalist id="dl' + i + '">' + Object.keys(p.options).map(o => '<option value="' + esc(o) + '">').join('') + '</datalist>';
+      case 'multi_select': {
+        const cur = new Set(v || []);
+        return '<div class="ms" data-ms="' + esc(p.name) + '">' + Object.keys(p.options).map(o =>
+          '<button type="button" class="pill c-' + esc(colourOf(p, o)) + (cur.has(o) ? ' on' : '') + '" data-opt="' + esc(o) +
+          '" aria-pressed="' + cur.has(o) + '">' + esc(o) + '</button>').join('') +
+          '<input class="in" data-msadd="' + esc(p.name) + '" placeholder="+ Add" aria-label="Add ' + esc(p.name) + '"></div>';
+      }
+      case 'date': return '<input class="in" type="date" ' + a + ' value="' + esc((v || '').slice(0, 10)) + '">';
+      case 'created_time': case 'last_edited_time': return '<span class="auto-v">' + (esc(fmtDate(v)) || '—') + ' · automatic</span>';
+      case 'number': return '<input class="in" inputmode="decimal" ' + a + ' value="' + (v == null ? '' : esc(String(v))) + '" placeholder="Empty">';
+      case 'checkbox': return '<input type="checkbox" class="cb" ' + a + (v ? ' checked' : '') + '>';
+      case 'url': return '<input class="in" type="url" ' + a + ' value="' + esc(v || '') + '" placeholder="https://…">';
+      default: return '<textarea class="in" rows="1" ' + a + ' placeholder="Empty">' + esc(v || '') + '</textarea>';
+    }
+  }
+  function cardPanel(r) {
+    if (!LIVE) {
+      return '<h2>' + esc(titleOf(r)) + '</h2><div class="props">' + PROPS.filter(p => p.type !== 'title').map(p =>
+        '<div class="k">' + esc(p.name) + '</div><div class="v ro">' + (valueHtml(p, r.v[p.name]) || '<span class="muted">Empty</span>') + '</div>').join('') + '</div>';
+    }
+    let h = TITLE ? '<input class="d-title" data-col="' + esc(TITLE) + '" value="' + esc(r.v[TITLE] || '') + '" placeholder="Untitled" aria-label="' + esc(TITLE) + '">' : '';
+    h += '<div class="props">';
+    PROPS.forEach((p, i) => {
+      if (p.type === 'title') return;
+      h += '<div class="k">' + esc(p.name) + '</div><div class="v">' + editorHtml(p, r.v[p.name], i) + '</div>';
+    });
+    return h + '</div><div class="d-foot"><button class="btn danger" data-act="delete-row">Delete card</button>' +
+               '<span class="hint">Changes are saved to ' + esc(D.source) + ' as you make them.</span></div>';
+  }
+  function typeSelect(p) {
+    if (p.type === 'title') return '<select disabled><option>Title</option></select>';
+    const cur = p.auto ? 'auto' : p.type;
+    return '<select data-act="type" aria-label="Type of ' + esc(p.name) + '">' +
+      '<option value="auto"' + (cur === 'auto' ? ' selected' : '') + '>' + (p.auto ? 'Auto (' + esc(TYPE_LABELS[p.type] || p.type) + ')' : 'Auto-detect') + '</option>' +
+      D.types.map(t => '<option value="' + t + '"' + (cur === t ? ' selected' : '') + '>' + TYPE_LABELS[t] + '</option>').join('') + '</select>';
+  }
+  function columnsPanel() {
+    let h = '<h2>Columns</h2><p class="hint">These are the columns of ' + esc(D.source) + '. Adding, renaming or deleting one here changes the CSV, ' +
+            'and columns you add or remove in the CSV show up here by themselves.</p>';
+    h += '<div class="field">Card title <select data-act="title">' + PROPS.map(p =>
+         '<option' + (p.name === TITLE ? ' selected' : '') + '>' + esc(p.name) + '</option>').join('') + '</select></div>';
+    PROPS.forEach(p => {
+      h += '<div class="colrow" data-name="' + esc(p.name) + '"><div class="colrow-top">' +
+           '<input class="in" data-act="rename" value="' + esc(p.name) + '" aria-label="Column name">' + typeSelect(p) +
+           '<button class="btn danger icon" data-act="delete-col" aria-label="Delete column ' + esc(p.name) + '"' + (p.type === 'title' ? ' disabled' : '') + '>Delete</button></div>';
+      if (p.type !== 'title') {
+        h += '<div class="colrow-opts"><label><input type="checkbox" data-act="on_card"' + (p.onCard ? ' checked' : '') + '> Show on cards</label>' +
+             '<label><input type="checkbox" data-act="in_table"' + (p.inTable ? ' checked' : '') + '> Show in table</label></div>';
+      }
+      if (isSelectType(p.type) || p.type === 'multi_select') {
+        const keys = Object.keys(p.options);
+        if (keys.length) {
+          h += '<div class="optlist" aria-label="Options">' + keys.map((o, i) =>
+            '<div class="optrow"><span class="pill c-' + esc(p.options[o]) + '">' + esc(o) + '</span>' +
+            '<select data-act="colour" data-o="' + esc(o) + '" aria-label="Colour of ' + esc(o) + '">' + COLOURS.map(c =>
+              '<option' + (c === p.options[o] ? ' selected' : '') + '>' + c + '</option>').join('') + '</select>' +
+            '<button class="btn icon" data-act="up" data-o="' + esc(o) + '"' + (i ? '' : ' disabled') + ' aria-label="Move ' + esc(o) + ' up">↑</button>' +
+            '<button class="btn icon" data-act="down" data-o="' + esc(o) + '"' + (i < keys.length - 1 ? '' : ' disabled') + ' aria-label="Move ' + esc(o) + ' down">↓</button></div>'
+          ).join('') + '</div>';
+        }
+      }
+      h += '</div>';
+    });
+    h += '<h3>Add a column</h3><div class="addcol"><input class="in" id="newColName" placeholder="Column name" aria-label="New column name">' +
+         '<select id="newColType" aria-label="New column type"><option value="auto">Auto</option>' +
+         D.types.map(t => '<option value="' + t + '">' + TYPE_LABELS[t] + '</option>').join('') + '</select>' +
+         '<button class="btn primary" data-act="add-col">Add</button></div>';
+    h += '<h3>Defaults</h3><p class="hint">Save the current “Group by” (' + esc(state.groupBy || '–') + ') and calendar date (' +
+         esc(state.dateProp || '–') + ') as the defaults in config.json.</p><button class="btn" data-act="defaults">Save as default</button>';
+    return h;
+  }
+
+  function renderDrawer() {
+    if (drawer.mode === 'card') {
+      const r = ROW_BY_ID.get(drawer.id);
+      if (!r) { closeDrawer(); return; }
+      dBody.innerHTML = cardPanel(r);
+    } else if (drawer.mode === 'columns') {
+      dBody.innerHTML = columnsPanel();
+    }
+  }
+  function openDrawer(mode, id, focusTitle) {
+    if (!detail.classList.contains('open')) drawer.lastFocus = document.activeElement;
+    drawer.mode = mode; drawer.id = id; drawer.stale = false;
+    renderDrawer();
+    detail.classList.add('open');
+    const f = focusTitle ? dBody.querySelector('.d-title') : detail.querySelector('[data-close].btn');
+    if (f) { f.focus(); if (focusTitle && f.select) f.select(); }
+  }
+  function closeDrawer() {
+    const ae = document.activeElement;
+    if (ae && dBody.contains(ae)) ae.blur();   // commits a field still being typed in
+    detail.classList.remove('open');
+    drawer.mode = null;
+    if (drawer.lastFocus && document.contains(drawer.lastFocus)) drawer.lastFocus.focus();
+  }
+
+  // A field the user is typing in and hasn't committed yet: don't redraw over it.
+  function isDirty(el) {
+    if (!el || !dBody.contains(el)) return false;
+    if (el.dataset.msadd != null || el.id === 'newColName') return el.value.trim() !== '';
+    if (el.dataset.act === 'rename') return el.value !== el.defaultValue;
+    if (el.dataset.col && el.type !== 'checkbox' && drawer.mode === 'card') {
+      const r = ROW_BY_ID.get(drawer.id), p = BY_NAME[el.dataset.col];
+      return !!(r && p) && !same(p, r.v[p.name], el.value.trim());
+    }
+    return false;
+  }
+  function focusSelector(el) {
+    if (!el || !dBody.contains(el)) return null;
+    if (el.dataset.col) return '[data-col="' + cssq(el.dataset.col) + '"]';
+    if (el.dataset.msadd != null) return '[data-msadd="' + cssq(el.dataset.msadd) + '"]';
+    if (el.dataset.opt != null) return '[data-ms="' + cssq(el.closest('[data-ms]').dataset.ms) + '"] [data-opt="' + cssq(el.dataset.opt) + '"]';
+    if (el.id) return '#' + cssq(el.id);
+    const row = el.closest('[data-name]');
+    if (el.dataset.act) return (row ? '[data-name="' + cssq(row.dataset.name) + '"] ' : '') + '[data-act="' + el.dataset.act + '"]' +
+                               (el.dataset.o != null ? '[data-o="' + cssq(el.dataset.o) + '"]' : '');
+    return null;
+  }
+  function refreshDrawer() {
+    if (!drawer.mode) return;
+    const ae = document.activeElement;
+    if (isDirty(ae)) { drawer.stale = true; return; }
+    const sel = focusSelector(ae);
+    renderDrawer();
+    drawer.stale = false;
+    if (sel) { const el = dBody.querySelector(sel); if (el) el.focus(); }
+  }
+  dBody.addEventListener('focusout', () => setTimeout(() => {
+    if (drawer.stale && !isDirty(document.activeElement)) refreshDrawer();
+  }, 0));
+
+  function same(p, cur, val) {
+    if (p.type === 'checkbox') return !!cur === !!val;
+    if (p.type === 'date') return (cur || '').slice(0, 10) === val;
+    if (p.type === 'number') return cur == null ? val === '' : (String(cur) === val || parseFloat(val.replace(/,/g, '')) === cur);
+    return (cur || '') === val;
+  }
+  function updateCell(r, p, value) {
+    return send({ op: 'update_cell', row: r.id, column: p.name, value: value });
+  }
+  async function newCard(values) {
+    const res = await send({ op: 'add_row', values: values || {} });
+    if (res && res.newId != null) openDrawer('card', res.newId, true);
+  }
+
+  detail.addEventListener('click', e => { if (e.target.closest('[data-close]')) closeDrawer(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && detail.classList.contains('open')) closeDrawer(); });
+
+  // card editor + columns panel: committed edits
+  dBody.addEventListener('change', e => {
+    if (!LIVE) return;
+    const el = e.target;
+    if (drawer.mode === 'card') {
+      const r = ROW_BY_ID.get(drawer.id);
+      if (!r) return;
+      if (el.dataset.msadd != null) {
+        const p = BY_NAME[el.dataset.msadd], add = el.value.trim();
+        el.value = '';
+        const cur = r.v[p.name] || [];
+        if (add && !cur.includes(add)) updateCell(r, p, cur.concat(add));
+        return;
+      }
+      const p = BY_NAME[el.dataset.col];
+      if (!p) return;
+      const val = el.type === 'checkbox' ? el.checked : el.value.trim();
+      if (!same(p, r.v[p.name], val)) updateCell(r, p, val);
+      return;
+    }
+    if (drawer.mode === 'columns') {
+      const act = el.dataset.act, row = el.closest('[data-name]'), name = row && row.dataset.name;
+      if (act === 'title') send({ op: 'set_title', name: el.value });
+      else if (act === 'rename') {
+        const v = el.value.trim();
+        if (v && v !== name) {
+          ['groupBy', 'dateProp', 'sortKey'].forEach(k => { if (state[k] === name) state[k] = v; });
+          send({ op: 'rename_column', old: name, new: v });
+        } else el.value = name;
+      }
+      else if (act === 'type') send({ op: 'set_property', name, patch: { type: el.value } });
+      else if (act === 'on_card' || act === 'in_table') send({ op: 'set_property', name, patch: { [act]: el.checked } });
+      else if (act === 'colour') {
+        const opts = Object.assign({}, BY_NAME[name].options, { [el.dataset.o]: el.value });
+        send({ op: 'set_property', name, patch: { options: opts } });
+      }
+    }
+  });
+  dBody.addEventListener('click', e => {
+    if (!LIVE) return;
+    const opt = e.target.closest('[data-opt]');
+    if (opt && drawer.mode === 'card') {
+      const r = ROW_BY_ID.get(drawer.id), p = BY_NAME[opt.closest('[data-ms]').dataset.ms];
+      const cur = r.v[p.name] || [], o = opt.dataset.opt;
+      const on = !cur.includes(o);
+      opt.classList.toggle('on', on); opt.setAttribute('aria-pressed', on);
+      updateCell(r, p, on ? cur.concat(o) : cur.filter(x => x !== o));
+      return;
+    }
+    const btn = e.target.closest('button[data-act]');
+    if (!btn) return;
+    const act = btn.dataset.act, row = btn.closest('[data-name]'), name = row && row.dataset.name;
+    if (act === 'delete-row') {
+      const r = ROW_BY_ID.get(drawer.id);
+      if (r && confirm('Delete "' + titleOf(r) + '" from ' + D.source + '?')) { send({ op: 'delete_row', row: r.id }); closeDrawer(); }
+    } else if (act === 'delete-col') {
+      if (confirm('Delete the column "' + name + '" and all its values from ' + D.source + '?\n\nThe previous file is kept as ' + D.source + '.bak.'))
+        send({ op: 'delete_column', name });
+    } else if (act === 'up' || act === 'down') {
+      const keys = Object.keys(BY_NAME[name].options), i = keys.indexOf(btn.dataset.o), j = act === 'up' ? i - 1 : i + 1;
+      if (j < 0 || j >= keys.length) return;
+      [keys[i], keys[j]] = [keys[j], keys[i]];
+      send({ op: 'set_property', name, patch: { options: Object.fromEntries(keys.map(k => [k, BY_NAME[name].options[k]])) } });
+    } else if (act === 'add-col') {
+      const n = $('newColName'), v = n.value.trim();
+      if (!v) { n.focus(); return; }
+      n.value = '';
+      send({ op: 'add_column', name: v, type: $('newColType').value });
+    } else if (act === 'defaults') {
+      send({ op: 'set_defaults', group_by: state.groupBy, date_property: state.dateProp }).then(r => { if (r) toast('Saved as default'); });
+    }
+  });
+  dBody.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && e.target.id === 'newColName') { e.preventDefault(); dBody.querySelector('[data-act="add-col"]').click(); }
+  });
+
+  // ---------- view interactions
   document.querySelector('.tabs').addEventListener('click', e => {
     const t = e.target.closest('.tab'); if (!t) return;
     state.view = t.dataset.view; store.set('view', state.view); render();
   });
-  groupSel.addEventListener('change', () => { state.groupBy = groupSel.value; store.set('groupBy', state.groupBy); render(); });
-  dateSel.addEventListener('change', () => { state.dateProp = dateSel.value; store.set('dateProp', state.dateProp); render(); });
-  document.getElementById('search').addEventListener('input', e => { state.query = e.target.value; render(); });
+  $('groupBy').addEventListener('change', e => { state.groupBy = e.target.value; store.set('groupBy', state.groupBy); render(); });
+  $('dateProp').addEventListener('change', e => { state.dateProp = e.target.value; store.set('dateProp', state.dateProp); render(); });
+  $('search').addEventListener('input', e => { state.query = e.target.value; render(); });
+  $('columnsBtn').addEventListener('click', () => openDrawer('columns'));
+  $('newBtn').addEventListener('click', () => newCard());
+
   view.addEventListener('click', e => {
+    if (e.target.closest('[data-link]')) return;
     const th = e.target.closest('th[data-sort]');
     if (th) {
       const k = th.dataset.sort;
@@ -467,14 +836,75 @@ td.wrap-text { min-width: 220px; max-width: 420px; }
                             : new Date(state.month.getFullYear(), state.month.getMonth() + n, 1);
       return render();
     }
+    const ng = e.target.closest('[data-new-group]');
+    if (ng) return newCard(ng.dataset.newGroup ? { [state.groupBy]: ng.dataset.newGroup } : {});
+    const nd = e.target.closest('[data-new-date]');
+    if (nd) return newCard({ [state.dateProp]: nd.dataset.newDate });
     const row = e.target.closest('[data-row]');
-    if (row) openDetail(+row.dataset.row);
+    if (row) openDrawer('card', +row.dataset.row);
+  });
+  view.addEventListener('keydown', e => {
+    const row = e.target.closest('[role="button"][data-row]');
+    if (row && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openDrawer('card', +row.dataset.row); }
   });
 
-  document.title = D.title;
-  document.getElementById('title').textContent = D.title;
-  document.getElementById('meta').textContent = D.rows.length + ' cards · from ' + D.source + ' · generated ' + D.generated;
-  render();
+  // drag a card to another Kanban column, or an entry to another calendar day
+  let dragId = null;
+  view.addEventListener('dragstart', e => {
+    const el = e.target.closest('[data-row][draggable]');
+    if (!el) return;
+    dragId = +el.dataset.row;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(dragId));
+    el.classList.add('dragging');
+  });
+  view.addEventListener('dragend', () => {
+    dragId = null;
+    view.querySelectorAll('.dragging, .over').forEach(el => el.classList.remove('dragging', 'over'));
+  });
+  view.addEventListener('dragover', e => {
+    if (dragId == null) return;
+    const t = e.target.closest('.col, .day');
+    if (!t) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    view.querySelectorAll('.over').forEach(el => { if (el !== t) el.classList.remove('over'); });
+    t.classList.add('over');
+  });
+  view.addEventListener('drop', e => {
+    const t = e.target.closest('.col, .day');
+    if (dragId == null || !t) return;
+    e.preventDefault();
+    const r = ROW_BY_ID.get(dragId);
+    const p = t.classList.contains('col') ? BY_NAME[state.groupBy] : BY_NAME[state.dateProp];
+    const value = t.classList.contains('col') ? t.dataset.group : t.dataset.date;
+    if (!r || !p || same(p, r.v[p.name], value)) return;
+    r.v[p.name] = value || (p.type === 'date' ? null : '');   // show the move straight away
+    render();
+    updateCell(r, p, value);
+  });
+
+  // ---------- start
+  (async function start() {
+    if (LIVE) {
+      try {
+        const res = await fetch('/api/data', { cache: 'no-store' });
+        const d = await res.json();
+        if (d.error) throw new Error(d.error);
+        setData(d);
+      } catch (e) {
+        view.innerHTML = '<p class="empty-note">Could not load the data: ' + esc(e.message) +
+                         '<br>Start the program with <code>python oneview.py</code> and open the address it prints.</p>';
+        return;
+      }
+      setInterval(poll, POLL_MS);
+      document.addEventListener('visibilitychange', poll);
+    } else {
+      setData(EMBEDDED);
+    }
+    syncIdle();
+    render();
+  })();
 })();
 </script>
 </body>

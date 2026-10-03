@@ -1,2 +1,4 @@
 oneview.html
+*.bak
+*.tmp
 __pycache__/
