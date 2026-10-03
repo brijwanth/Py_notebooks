@@ -1,0 +1,40 @@
+{
+  "title": "OneView",
+  "csv": "oneview.csv",
+  "output": "oneview.html",
+
+  "title_property": "Name",
+
+  "date_formats": ["%d-%m-%Y", "%d/%m/%Y", "%Y-%m-%d", "%d-%b-%Y", "%d-%b-%y", "%B %d, %Y", "%Y-%m-%d %H:%M", "%d-%m-%Y %H:%M", "%B %d, %Y %I:%M %p"],
+  "display_date_format": "%d-%b-%Y",
+  "multi_select_separator": ",",
+
+  "autofill_created_time": true,
+
+  "board": {
+    "group_by": "Status",
+    "hide_empty_columns": false
+  },
+
+  "calendar": {
+    "date_property": "Next Review",
+    "week_starts_monday": true
+  },
+
+  "properties": [
+    { "name": "Name",         "type": "title" },
+    { "name": "Status",       "type": "select",
+      "options": { "Pre-Check": "gray", "Research": "blue", "Watchlist": "yellow", "Holding": "green", "Exited": "red" },
+      "on_card": false },
+    { "name": "Sector",       "type": "select",       "on_card": true },
+    { "name": "Tags",         "type": "multi_select", "on_card": true },
+    { "name": "Conviction",   "type": "select",
+      "options": { "High": "green", "Medium": "yellow", "Low": "gray" },
+      "on_card": true },
+    { "name": "Date Created", "type": "created_time", "on_card": true },
+    { "name": "Next Review",  "type": "date",         "on_card": true },
+    { "name": "In Portfolio", "type": "checkbox",     "on_card": false },
+    { "name": "Notes",        "type": "text",         "on_card": false },
+    { "name": "Link",         "type": "url",          "on_card": false, "in_table": false }
+  ]
+}
