@@ -280,7 +280,8 @@ def resolve_properties(cfg, t):
             ptype, auto = detect_type(name, values, cfg), True
         p = Prop(name=name, idx=idx, type=ptype, auto=auto, values=values,
                  on_card=conf.get('on_card', ptype not in ('text', 'url')),
-                 in_table=conf.get('in_table', True), options={}, fmt=None)
+                 in_table=conf.get('in_table', True), options={}, fmt=None,
+                 default='' if ptype in STAMP_TYPES or ptype == 'title' else str(conf.get('default') or ''))
         if ptype in DATE_TYPES:
             fallback = DEFAULT_STAMP_FORMAT if ptype in STAMP_TYPES else cfg['date_formats'][0]
             p.fmt = column_format(values, cfg['date_formats'], fallback)
@@ -350,17 +351,27 @@ def stamp(p, now):
     return now.strftime(p.fmt or DEFAULT_STAMP_FORMAT)
 
 
+def fill_defaults(t, props, row):
+    for p in props:
+        if p.default and not t.cell(row, p.idx):
+            t.set_cell(row, p.idx, p.default)
+
+
 def fill_created(cfg, t, props, now):
-    """Give rows with a blank created-time cell the current time. Returns how many were filled."""
-    if not cfg['autofill_created_time']:
+    """Rows with a blank created-time cell are new to OneView (e.g. pasted into the CSV):
+    stamp them with the current time and give their blank cells the column defaults.
+    Returns how many rows were filled."""
+    created = [p for p in props if p.type == 'created_time']
+    if not cfg['autofill_created_time'] or not created:
         return 0
     n = 0
-    for p in props:
-        if p.type == 'created_time':
-            for r in range(len(t.rows)):
-                if not t.blank(r) and not t.cell(r, p.idx):
+    for r in range(len(t.rows)):
+        if not t.blank(r) and any(not t.cell(r, p.idx) for p in created):
+            for p in created:
+                if not t.cell(r, p.idx):
                     t.set_cell(r, p.idx, stamp(p, now))
-                    n += 1
+            fill_defaults(t, props, r)
+            n += 1
     return n
 
 
@@ -368,11 +379,16 @@ def build_payload(cfg, t, csv_path, version, live):
     props = resolve_properties(cfg, t)
     title = next((p.name for p in props if p.type == 'title'), None)
     warnings, rows = [], []
+    created = [p for p in props if p.type == 'created_time']
     for r in range(len(t.rows)):
         if t.blank(r):
             continue
         label = (t.cell(r, props[0].idx) if props else '') or 'row %d' % (r + 2)
-        rows.append({'id': r, 'v': {p.name: to_json_value(p, t.cell(r, p.idx), cfg, warnings, label)
+        # A row pasted into the CSV (no created date yet) shows its column defaults straight away;
+        # they are saved with the created date on the next write.
+        new = cfg['autofill_created_time'] and any(not t.cell(r, p.idx) for p in created)
+        rows.append({'id': r, 'v': {p.name: to_json_value(p, t.cell(r, p.idx) or (p.default if new else ''),
+                                                          cfg, warnings, label)
                                     for p in props}})
     groupable = [p.name for p in props if p.type in SELECT_TYPES]
     dated = [p.name for p in props if p.type in DATE_TYPES]
@@ -393,7 +409,7 @@ def build_payload(cfg, t, csv_path, version, live):
         'displayDateFormat': cfg['display_date_format'],
         'types': [x for x in TYPES if x not in ('title', 'status')],
         'properties': [{'name': p.name, 'type': p.type, 'auto': p.auto, 'options': p.options,
-                        'onCard': p.on_card, 'inTable': p.in_table} for p in props],
+                        'onCard': p.on_card, 'inTable': p.in_table, 'default': p.default} for p in props],
         'rows': rows,
         'board': board,
         'calendar': calendar,
@@ -439,7 +455,7 @@ class Store:
             if n:
                 try:
                     write_table(csv_path, t)
-                    print('stamped %d blank created date(s) in %s' % (n, os.path.basename(csv_path)))
+                    print('filled in %d new row(s) in %s' % (n, os.path.basename(csv_path)))
                 except Locked as e:
                     print('note:', e)
 
@@ -455,7 +471,7 @@ class Store:
             if not handler:
                 raise OneViewError('unknown operation %r' % op)
             now = dt.datetime.now()
-            csv_changed, cfg_changed, new_id = handler(cfg, t, props, req, now)
+            csv_changed, cfg_changed, result = handler(cfg, t, props, req, now)
             if csv_changed:
                 fill_created(cfg, t, resolve_properties(cfg, t), now)
                 write_table(csv_path, t)
@@ -463,7 +479,7 @@ class Store:
                 save_config(self.cfg_path, cfg)
             cfg, csv_path, t, version = self._load()
             payload = build_payload(cfg, t, csv_path, version, True)
-            payload['newId'] = new_id
+            payload['result'] = result
             return payload
 
 
@@ -505,21 +521,68 @@ def op_update_cell(cfg, t, props, req, now):
     return True, False, row
 
 
-def op_add_row(cfg, t, props, req, now):
+def _new_row(t, props, cells, now):
+    """Append a row from {column: csv text}, then stamps and defaults."""
     t.rows.append([''] * len(t.headers))
     row = len(t.rows) - 1
-    for name, value in (req.get('values') or {}).items():
-        p = _prop(props, name)
-        if p.type not in STAMP_TYPES:
-            t.set_cell(row, p.idx, to_csv_value(p, value, cfg))
     for p in props:
         if p.type in STAMP_TYPES:
             t.set_cell(row, p.idx, stamp(p, now))
+        elif cells.get(p.name):
+            t.set_cell(row, p.idx, cells[p.name])
+    fill_defaults(t, props, row)
     if t.blank(row):                                # keep the row even with no stamp columns
         title = next((p for p in props if p.type == 'title'), None)
         if title:
             t.set_cell(row, title.idx, 'Untitled')
-    return True, False, row
+    return row
+
+
+def op_add_row(cfg, t, props, req, now):
+    cells = {}
+    for name, value in (req.get('values') or {}).items():
+        p = _prop(props, name)
+        if p.type not in STAMP_TYPES:
+            cells[name] = to_csv_value(p, value, cfg)
+    return True, False, _new_row(t, props, cells, now)
+
+
+def text_to_csv_value(p, raw, cfg):
+    """Pasted text -> CSV cell. Dates are re-written in the column's own format."""
+    raw = (raw or '').strip()
+    if not raw or p.type not in DATE_TYPES:
+        return raw
+    d, _ = parse_date(raw, cfg['date_formats'])
+    if d is None:
+        raise OneViewError('Could not read %s "%s". Use a date like %s.'
+                           % (p.name, raw, dt.date.today().strftime(p.fmt.split(' ')[0])))
+    return d.strftime(p.fmt)
+
+
+def op_add_rows(cfg, t, props, req, now):
+    """Bulk add: rows of {column: pasted text}. Rows whose title is already on the board
+    (or repeated in the paste) are skipped when skip_duplicates is set."""
+    title = next((p for p in props if p.type == 'title'), None)
+    seen = {t.cell(r, title.idx).lower() for r in range(len(t.rows))} if title else set()
+    stage = req.get('stage') or {}
+    added, skipped = 0, []
+    for values in req.get('rows') or []:
+        cells = {}
+        for name, raw in values.items():
+            p = _prop(props, name)
+            if p.type not in STAMP_TYPES:
+                cells[name] = text_to_csv_value(p, raw, cfg)
+        for name, value in stage.items():
+            if not cells.get(name):
+                cells[name] = to_csv_value(_prop(props, name), value, cfg)
+        key = (cells.get(title.name) or '').lower() if title else ''
+        if req.get('skip_duplicates', True) and key and key in seen:
+            skipped.append(cells[title.name])
+            continue
+        seen.add(key)
+        _new_row(t, props, cells, now)
+        added += 1
+    return added > 0, False, {'added': added, 'skipped': skipped}
 
 
 def op_delete_row(cfg, t, props, req, now):
@@ -587,6 +650,11 @@ def op_set_property(cfg, t, props, req, now):
     for key in ('on_card', 'in_table'):
         if key in patch:
             conf[key] = bool(patch[key])
+    if 'default' in patch:
+        if patch['default']:
+            conf['default'] = str(patch['default'])
+        else:
+            conf.pop('default', None)
     if 'options' in patch:
         conf['options'] = {str(k): v for k, v in patch['options'].items() if v in COLOURS}
     if not conf:
@@ -608,7 +676,7 @@ def op_set_defaults(cfg, t, props, req, now):
 
 
 OPS = {
-    'update_cell': op_update_cell, 'add_row': op_add_row, 'delete_row': op_delete_row,
+    'update_cell': op_update_cell, 'add_row': op_add_row, 'add_rows': op_add_rows, 'delete_row': op_delete_row,
     'add_column': op_add_column, 'delete_column': op_delete_column, 'rename_column': op_rename_column,
     'set_property': op_set_property, 'set_title': op_set_title, 'set_defaults': op_set_defaults,
 }

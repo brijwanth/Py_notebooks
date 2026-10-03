@@ -13,6 +13,7 @@
   "properties": {
     "Kanban Status": {
       "type": "select",
+      "default": "Pre-Check",
       "options": {
         "Pre-Check": "gray",
         "Research": "blue",

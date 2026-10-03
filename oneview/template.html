@@ -144,9 +144,9 @@ td.wrap-text { min-width: 220px; max-width: 420px; }
 
 /* Drawer */
 .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.25); opacity: 0; pointer-events: none; transition: opacity .15s; }
-.drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(460px, 100%); background: var(--panel); transform: translateX(100%); transition: transform .18s ease, visibility .18s; visibility: hidden; overflow-y: auto; padding: 16px 24px 32px; border-left: 1px solid var(--line); }
+.drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(460px, 100%); background: var(--panel); transform: translateX(100%); transition: transform .18s ease, visibility 0s linear .18s; visibility: hidden; overflow-y: auto; padding: 16px 24px 32px; border-left: 1px solid var(--line); }
 .open .scrim { opacity: 1; pointer-events: auto; }
-.open .drawer { transform: none; visibility: visible; box-shadow: -8px 0 24px rgba(0,0,0,.12); }
+.open .drawer { transform: none; visibility: visible; transition: transform .18s ease, visibility 0s; box-shadow: -8px 0 24px rgba(0,0,0,.12); }
 .d-top { display: flex; justify-content: flex-end; margin-bottom: 4px; }
 .drawer h2 { font-size: 22px; margin: 4px 0 16px; overflow-wrap: anywhere; }
 .d-title { font-size: 22px; font-weight: 700; width: 100%; border: 0; background: none; padding: 4px 6px; margin: 0 0 14px -6px; border-radius: 6px; }
@@ -183,6 +183,10 @@ input.in[type=date] { width: auto; }
 .optrow select { font-size: 12px; padding: 1px 4px; }
 .addcol { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
 .addcol .in { flex: 1 1 160px; margin-left: 0; border-color: var(--line-strong); }
+textarea.bulk { width: 100%; margin: 4px 0 12px; border-color: var(--line-strong); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; field-sizing: fixed; min-height: 200px; }
+.bulk-preview { font-size: 13px; margin: 10px 0 14px; color: var(--muted); }
+.bulk-preview b { color: var(--text); }
+.check-line { display: flex; gap: 6px; align-items: center; font-size: 13px; }
 .field { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; font-size: 13px; color: var(--muted); }
 .drawer h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 20px 0 8px; font-weight: 600; }
 
@@ -220,6 +224,7 @@ input.in[type=date] { width: auto; }
       <label id="dateWrap">Date <select id="dateProp"></select></label>
       <input id="search" type="search" placeholder="Search…" aria-label="Search">
       <button class="btn" id="columnsBtn">Columns</button>
+      <button class="btn" id="bulkBtn">Bulk add</button>
       <button class="btn primary" id="newBtn">+ New</button>
     </div>
   </div>
@@ -566,7 +571,7 @@ input.in[type=date] { width: auto; }
     document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', t.dataset.view === state.view));
     $('groupWrap').style.display = (state.view !== 'table' && $('groupBy').options.length) ? '' : 'none';
     $('dateWrap').style.display = (state.view === 'calendar' && $('dateProp').options.length) ? '' : 'none';
-    $('newBtn').style.display = $('columnsBtn').style.display = LIVE ? '' : 'none';
+    $('newBtn').style.display = $('columnsBtn').style.display = $('bulkBtn').style.display = LIVE ? '' : 'none';
     const keep = [...view.querySelectorAll('.board, .table-wrap')].map(el => el.scrollLeft);
     const rows = visibleRows();
     view.innerHTML = state.view === 'board' ? renderBoard(rows) : state.view === 'table' ? renderTable(rows) : renderCalendar(rows);
@@ -630,7 +635,10 @@ input.in[type=date] { width: auto; }
            '<button class="btn danger icon" data-act="delete-col" aria-label="Delete column ' + esc(p.name) + '"' + (p.type === 'title' ? ' disabled' : '') + '>Delete</button></div>';
       if (p.type !== 'title') {
         h += '<div class="colrow-opts"><label><input type="checkbox" data-act="on_card"' + (p.onCard ? ' checked' : '') + '> Show on cards</label>' +
-             '<label><input type="checkbox" data-act="in_table"' + (p.inTable ? ' checked' : '') + '> Show in table</label></div>';
+             '<label><input type="checkbox" data-act="in_table"' + (p.inTable ? ' checked' : '') + '> Show in table</label>' +
+             (isSelectType(p.type) ? '<label>New cards start as <select data-act="default"><option value="">(blank)</option>' +
+               Object.keys(p.options).map(o => '<option' + (o === p.default ? ' selected' : '') + '>' + esc(o) + '</option>').join('') +
+               '</select></label>' : '') + '</div>';
       }
       if (isSelectType(p.type) || p.type === 'multi_select') {
         const keys = Object.keys(p.options);
@@ -655,6 +663,72 @@ input.in[type=date] { width: auto; }
     return h;
   }
 
+  function parseBulk(text) {
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    if (!lines.length) return { rows: [], cols: [], untitled: 0 };
+    const delim = lines.some(l => l.includes('\t')) ? '\t' : lines.some(l => l.includes(',')) ? ',' : null;
+    const split = l => delim ? l.split(delim).map(c => c.trim()) : [l.trim()];
+    const byLower = Object.fromEntries(PROPS.map(p => [p.name.toLowerCase(), p.name]));
+    const first = split(lines[0]);
+    let cols, body = lines;
+    if (first.every(c => byLower[c.toLowerCase()])) { cols = first.map(c => byLower[c.toLowerCase()]); body = lines.slice(1); }
+    else cols = delim ? PROPS.map(p => p.name) : [TITLE];
+    let untitled = 0;
+    const rows = [];
+    body.forEach(l => {
+      const cells = split(l), v = {};
+      cols.forEach((c, i) => { if (cells[i]) v[c] = cells[i]; });
+      if (!v[TITLE]) { if (Object.keys(v).length) untitled++; return; }
+      rows.push(v);
+    });
+    return { rows, cols, untitled };
+  }
+  function bulkPanel() {
+    const gp = BY_NAME[state.groupBy];
+    const order = PROPS.filter(p => !isStampType(p.type)).map(p => p.name);
+    let h = '<h2>Bulk add</h2><p class="hint">Paste one ' + esc(TITLE) + ' per line, or rows copied from Excel. ' +
+            'If the first line holds column names (e.g. <i>' + esc(order.slice(0, 2).join(', ')) + '</i>) they are used; ' +
+            'otherwise multi-column rows are read in this order: ' + esc(order.join(', ')) + '.</p>' +
+            '<textarea class="in bulk" id="bulkText" aria-label="Cards to add" placeholder="MAHABANK\nIDFCFIRSTB\nHOMEFIRST"></textarea>';
+    if (gp) {
+      const def = gp.default || Object.keys(gp.options)[0] || '';
+      h += '<div class="field">' + esc(gp.name) + ' for the new cards <select id="bulkStage"><option value="">(as pasted / blank)</option>' +
+           Object.keys(gp.options).map(o => '<option' + (o === def ? ' selected' : '') + '>' + esc(o) + '</option>').join('') + '</select></div>';
+    }
+    h += '<label class="check-line"><input type="checkbox" id="bulkSkip" checked> Skip ' + esc(TITLE) + 's already on the board</label>' +
+         '<div class="bulk-preview" id="bulkPreview" aria-live="polite">Nothing pasted yet.</div>' +
+         '<button class="btn primary" id="bulkAdd" disabled>Add cards</button>';
+    return h;
+  }
+  function bulkPreview() {
+    const { rows, cols, untitled } = parseBulk($('bulkText').value);
+    const skip = $('bulkSkip').checked;
+    const have = new Set(D.rows.map(r => String(r.v[TITLE] || '').toLowerCase()));
+    const seen = new Set(), dup = [];
+    let add = 0;
+    rows.forEach(v => {
+      const k = v[TITLE].toLowerCase();
+      if (skip && (have.has(k) || seen.has(k))) dup.push(v[TITLE]); else add++;
+      seen.add(k);
+    });
+    let msg = rows.length || untitled ? '<b>' + add + '</b> new card' + (add === 1 ? '' : 's') + ' · columns read: ' + esc(cols.join(', ')) : 'Nothing pasted yet.';
+    if (dup.length) msg += '<br>' + dup.length + ' already on the board, skipped: ' + esc(dup.slice(0, 8).join(', ')) + (dup.length > 8 ? '…' : '');
+    if (untitled) msg += '<br>' + untitled + ' line' + (untitled > 1 ? 's have' : ' has') + ' no ' + esc(TITLE) + ' and will be ignored.';
+    $('bulkPreview').innerHTML = msg;
+    $('bulkAdd').disabled = !add;
+    $('bulkAdd').textContent = add ? 'Add ' + add + ' card' + (add === 1 ? '' : 's') : 'Add cards';
+  }
+  async function bulkAdd() {
+    const { rows } = parseBulk($('bulkText').value);
+    const st = $('bulkStage'), stage = st && st.value ? { [state.groupBy]: st.value } : {};
+    $('bulkAdd').disabled = true;
+    const res = await send({ op: 'add_rows', rows, stage, skip_duplicates: $('bulkSkip').checked });
+    if (!res) { if (drawer.mode === 'bulk') bulkPreview(); return; }
+    const r = res.result;
+    toast('Added ' + r.added + ' card' + (r.added === 1 ? '' : 's') + (r.skipped.length ? ', skipped ' + r.skipped.length + ' already on the board' : ''));
+    closeDrawer();
+  }
+
   function renderDrawer() {
     if (drawer.mode === 'card') {
       const r = ROW_BY_ID.get(drawer.id);
@@ -662,6 +736,8 @@ input.in[type=date] { width: auto; }
       dBody.innerHTML = cardPanel(r);
     } else if (drawer.mode === 'columns') {
       dBody.innerHTML = columnsPanel();
+    } else if (drawer.mode === 'bulk') {
+      dBody.innerHTML = bulkPanel();
     }
   }
   function openDrawer(mode, id, focusTitle) {
@@ -669,7 +745,7 @@ input.in[type=date] { width: auto; }
     drawer.mode = mode; drawer.id = id; drawer.stale = false;
     renderDrawer();
     detail.classList.add('open');
-    const f = focusTitle ? dBody.querySelector('.d-title') : detail.querySelector('[data-close].btn');
+    const f = focusTitle ? dBody.querySelector('.d-title') : mode === 'bulk' ? $('bulkText') : detail.querySelector('[data-close].btn');
     if (f) { f.focus(); if (focusTitle && f.select) f.select(); }
   }
   function closeDrawer() {
@@ -704,6 +780,7 @@ input.in[type=date] { width: auto; }
   }
   function refreshDrawer() {
     if (!drawer.mode) return;
+    if (drawer.mode === 'bulk') { bulkPreview(); return; }
     const ae = document.activeElement;
     if (isDirty(ae)) { drawer.stale = true; return; }
     const sel = focusSelector(ae);
@@ -726,7 +803,7 @@ input.in[type=date] { width: auto; }
   }
   async function newCard(values) {
     const res = await send({ op: 'add_row', values: values || {} });
-    if (res && res.newId != null) openDrawer('card', res.newId, true);
+    if (res && res.result != null) openDrawer('card', res.result, true);
   }
 
   detail.addEventListener('click', e => { if (e.target.closest('[data-close]')) closeDrawer(); });
@@ -763,6 +840,7 @@ input.in[type=date] { width: auto; }
         } else el.value = name;
       }
       else if (act === 'type') send({ op: 'set_property', name, patch: { type: el.value } });
+      else if (act === 'default') send({ op: 'set_property', name, patch: { default: el.value } });
       else if (act === 'on_card' || act === 'in_table') send({ op: 'set_property', name, patch: { [act]: el.checked } });
       else if (act === 'colour') {
         const opts = Object.assign({}, BY_NAME[name].options, { [el.dataset.o]: el.value });
@@ -804,6 +882,9 @@ input.in[type=date] { width: auto; }
       send({ op: 'set_defaults', group_by: state.groupBy, date_property: state.dateProp }).then(r => { if (r) toast('Saved as default'); });
     }
   });
+  dBody.addEventListener('input', e => { if (drawer.mode === 'bulk' && e.target.id === 'bulkText') bulkPreview(); });
+  dBody.addEventListener('change', e => { if (drawer.mode === 'bulk' && e.target.id === 'bulkSkip') bulkPreview(); });
+  dBody.addEventListener('click', e => { if (drawer.mode === 'bulk' && e.target.id === 'bulkAdd') bulkAdd(); });
   dBody.addEventListener('keydown', e => {
     if (e.key === 'Enter' && e.target.id === 'newColName') { e.preventDefault(); dBody.querySelector('[data-act="add-col"]').click(); }
   });
@@ -818,6 +899,7 @@ input.in[type=date] { width: auto; }
   $('search').addEventListener('input', e => { state.query = e.target.value; render(); });
   $('columnsBtn').addEventListener('click', () => openDrawer('columns'));
   $('newBtn').addEventListener('click', () => newCard());
+  $('bulkBtn').addEventListener('click', () => openDrawer('bulk'));
 
   view.addEventListener('click', e => {
     if (e.target.closest('[data-link]')) return;
