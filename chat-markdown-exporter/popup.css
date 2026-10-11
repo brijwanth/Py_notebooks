@@ -1,0 +1,108 @@
+:root {
+  --bg: #ffffff;
+  --fg: #1f1f1f;
+  --muted: #666;
+  --border: #d9d9d9;
+  --accent: #c96442;
+  --accent-fg: #ffffff;
+  --ok: #1a7f37;
+  --warn: #9a6700;
+  --err: #cf222e;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #202124;
+    --fg: #e8eaed;
+    --muted: #9aa0a6;
+    --border: #3c4043;
+    --ok: #3fb950;
+    --warn: #d29922;
+    --err: #f85149;
+  }
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  width: 320px;
+  margin: 0;
+  padding: 14px 16px 12px;
+  font: 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+h1 {
+  font-size: 15px;
+  margin: 0;
+}
+
+.site {
+  margin: 8px 0 10px;
+  color: var(--muted);
+}
+
+fieldset {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin: 0 0 12px;
+  padding: 8px 10px;
+  display: grid;
+  gap: 6px;
+}
+
+label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 8px;
+}
+
+button {
+  font: inherit;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--fg);
+  cursor: pointer;
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-fg);
+  font-weight: 600;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.status {
+  margin: 10px 0 0;
+  min-height: 1em;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.status.ok { color: var(--ok); }
+.status.warn { color: var(--warn); }
+.status.err { color: var(--err); }

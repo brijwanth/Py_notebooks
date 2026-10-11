@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Chat to Markdown</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <img src="icons/icon32.png" alt="" width="20" height="20">
+    <h1>Chat to Markdown</h1>
+  </header>
+
+  <p id="site" class="site">Checking this tab…</p>
+
+  <fieldset id="options">
+    <label><input type="checkbox" id="thinking"> Include thinking / reasoning</label>
+    <label><input type="checkbox" id="tools"> Include tool calls &amp; results</label>
+    <label><input type="checkbox" id="attachments"> Include attached file contents</label>
+    <label><input type="checkbox" id="timestamps"> Include timestamps</label>
+  </fieldset>
+
+  <div class="actions">
+    <button id="download" class="primary" disabled>Download .md</button>
+    <button id="copy" disabled>Copy</button>
+  </div>
+
+  <p id="status" class="status" role="status"></p>
+
+  <script src="popup.js"></script>
+</body>
+</html>
